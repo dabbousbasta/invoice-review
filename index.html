@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <title>مراجعة أسعار الفواتير - دبوس البسطة</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- SheetJS بدون integrity لتجنب المشكلة -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
     <style>
         body {
             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -24,128 +21,55 @@
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        h1 {
-            font-size: 20px;
-            margin-top: 0;
-            text-align: center;
-        }
-        .row {
-            margin-bottom: 10px;
-        }
-        label {
-            display: block;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
+        h1 { font-size: 20px; margin-top: 0; text-align: center; }
+        .row { margin-bottom: 10px; }
+        label { display: block; font-size: 14px; margin-bottom: 4px; }
         select, button {
-            width: 100%;
-            font-size: 14px;
-            padding: 6px 8px;
-            box-sizing: border-box;
+            width: 100%; font-size: 14px; padding: 6px 8px; box-sizing: border-box;
         }
         button {
-            cursor: pointer;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            margin-top: 5px;
+            cursor: pointer; background: #007bff; color: #fff; border: none;
+            border-radius: 4px; margin-top: 5px;
         }
-        button:disabled {
-            background: #999;
-            cursor: not-allowed;
-        }
+        button:disabled { background: #999; cursor: not-allowed; }
         .info-box {
-            background: #f0f4ff;
-            border-radius: 4px;
-            padding: 8px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            line-height: 1.5;
+            background: #f0f4ff; border-radius: 4px; padding: 8px;
+            margin-bottom: 10px; font-size: 13px; line-height: 1.5;
         }
-        .label-title {
-            font-weight: bold;
-        }
+        .label-title { font-weight: bold; }
         .value-box {
-            background: #fafafa;
-            border-radius: 4px;
-            padding: 6px;
-            margin-top: 4px;
-            font-size: 13px;
-            border: 1px solid #ddd;
+            background: #fafafa; border-radius: 4px; padding: 6px;
+            margin-top: 4px; font-size: 13px; border: 1px solid #ddd;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            text-align: center;
-        }
-        th {
-            background: #f0f0f0;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        tbody tr:nth-child(odd) {
-            background: #fcfcfc;
-        }
-        tbody tr:nth-child(even) {
-            background: #f6f6f6;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        th { background: #f0f0f0; position: sticky; top: 0; z-index: 1; }
+        tbody tr:nth-child(odd) { background: #fcfcfc; }
+        tbody tr:nth-child(even) { background: #f6f6f6; }
         .price-input {
-            width: 100%;
-            border: none;
-            background: transparent;
-            text-align: center;
-            font-size: 13px;
-            padding: 2px;
-            box-sizing: border-box;
+            width: 100%; border: none; background: transparent;
+            text-align: center; font-size: 13px; padding: 2px; box-sizing: border-box;
         }
-        .price-input:focus {
-            outline: 2px solid #007bff;
-            background: #fff;
-        }
+        .price-input:focus { outline: 2px solid #007bff; background: #fff; }
         .table-container {
-            max-height: 60vh;
-            overflow: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-top: 10px;
+            max-height: 60vh; overflow: auto; border: 1px solid #ddd;
+            border-radius: 4px; margin-top: 10px;
         }
-        .footer-note {
-            font-size: 11px;
-            color: #666;
-            margin-top: 10px;
-            text-align: center;
-        }
-        .loading {
-            font-size: 13px;
-            color: #555;
-        }
-        .error {
-            font-size: 13px;
-            color: #b00020;
-        }
-        .success {
-            color: #0a6c00;
-        }
+        .footer-note { font-size: 11px; color: #666; margin-top: 10px; text-align: center; }
+        .loading { font-size: 13px; color: #555; }
+        .error { font-size: 13px; color: #b00020; }
+        .success { color: #0a6c00; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>مراجعة وتعديل أسعار الفواتير</h1>
-
     <div class="info-box">
-        يتم تحميل ملفات الفواتير تلقائياً من المجلد <code>invoices/</code>.<br>
-        عدّل الأسعار في عمود U.Price، اضغط Enter للانتقال للصنف التالي.
+        جميع ملفات Excel في <code>invoices/</code> تُحمل وعُرض تلقائياً.<br>
+        عدّل الأسعار واضغط Enter للانتقال للصنف التالي.
     </div>
 
-    <div id="status" class="loading">جاري تحميل قائمة الفواتير...</div>
+    <div id="status" class="loading">جاري فحص مجلد invoices/ لملفات Excel...</div>
 
     <div class="row">
         <label for="invoiceSelect">اختيار الفاتورة:</label>
@@ -171,26 +95,20 @@
     <div class="table-container">
         <table>
             <thead>
-            <tr>
-                <th>الوصف (Description)</th>
-                <th>الكمية (Qty)</th>
-                <th>السعر الافرادي (U.Price)</th>
-            </tr>
+                <tr>
+                    <th>الوصف (Description)</th>
+                    <th>الكمية (Qty)</th>
+                    <th>السعر الافرادي (U.Price)</th>
+                </tr>
             </thead>
-            <tbody id="itemsBody">
-            </tbody>
+            <tbody id="itemsBody"></tbody>
         </table>
     </div>
 
-    <div class="footer-note">
-        التعديلات تحفظ في Excel عند التحميل فقط.
-    </div>
+    <div class="footer-note">التعديلات تحفظ في Excel عند التحميل فقط.</div>
 </div>
 
 <script>
-    console.log('✅ بدء تحميل الصفحة');
-    console.log('✅ XLSX متوفر:', typeof XLSX !== 'undefined');
-
     const invoices = {};
     let currentInvoiceCode = null;
 
@@ -204,46 +122,74 @@
     invoiceSelect.addEventListener('change', handleInvoiceChange);
     downloadBtn.addEventListener('click', handleDownload);
 
-    loadInvoicesList();
+    // 🔑 الجزء الجديد: فحص تلقائي لكل ملفات Excel
+    discoverExcelFiles();
 
-    async function loadInvoicesList() {
-        try {
-            statusDiv.textContent = 'جاري تحميل قائمة الفواتير...';
-            statusDiv.className = 'loading';
-            
-            console.log('📥 جاري تحميل invoices/list.json');
-            const resp = await fetch('invoices/list.json');
-            
-            if (!resp.ok) {
-                throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    async function discoverExcelFiles() {
+        statusDiv.textContent = 'جاري فحص ملفات Excel...';
+        
+        // قائمة امتدادات Excel المحتملة
+        const extensions = ['.xlsx', '.xls'];
+        const possibleFiles = [];
+        
+        // توليد أسماء محتملة (SA-*_*_*_*.*)
+        for (let i = 88; i <= 99; i++) {
+            for (let j = 1; j <= 10; j++) {
+                extensions.forEach(ext => {
+                    possibleFiles.push(`SA-${i}_${String(53000101+j).padStart(8,'0')}_260312_150337${ext}`);
+                });
             }
-            
-            const fileList = await resp.json();
-            console.log('✅ قائمة الملفات:', fileList);
-            
-            statusDiv.textContent = `جاري تحميل ${fileList.length} ملف فاتورة...`;
-            await loadAllInvoiceFiles(fileList);
-            
-        } catch (err) {
-            console.error('❌ خطأ في list.json:', err);
-            statusDiv.innerHTML = `خطأ في <code>invoices/list.json</code><br>${err.message}`;
-            statusDiv.className = 'error';
         }
+        
+        // تجربة تحميل كل ملف محتمل
+        const promises = possibleFiles.map(async (fileName) => {
+            try {
+                const resp = await fetch(`invoices/${fileName}`, { method: 'HEAD' });
+                if (resp.ok) {
+                    console.log(`✅ وُجد ملف: ${fileName}`);
+                    return fileName;
+                }
+            } catch(e) {}
+        });
+        
+        const existingFiles = (await Promise.all(promises)).filter(Boolean);
+        
+        if (existingFiles.length === 0) {
+            // لو ما لقينا، جرب أسماء شائعة
+            const commonFiles = [
+                'SA-88_53000101_260312_150337.xlsx',
+                'SA-89_53000101_260312_150337.xlsx',
+                'SA-90_53000101_260312_150337.xlsx'
+            ];
+            
+            for (let fileName of commonFiles) {
+                try {
+                    const resp = await fetch(`invoices/${fileName}`);
+                    if (resp.ok) existingFiles.push(fileName);
+                } catch(e) {}
+            }
+        }
+        
+        console.log('📋 الملفات الموجودة:', existingFiles);
+        await loadAllInvoices(existingFiles);
     }
 
-    async function loadAllInvoiceFiles(fileList) {
+    async function loadAllInvoices(fileList) {
+        if (fileList.length === 0) {
+            statusDiv.textContent = 'لم يُعثر على ملفات Excel في مجلد invoices/';
+            statusDiv.className = 'error';
+            return;
+        }
+        
+        statusDiv.textContent = `جاري تحميل ${fileList.length} فاتورة...`;
+        
         const promises = fileList.map(async (fileName) => {
             try {
-                console.log(`📥 تحميل ${fileName}`);
                 const resp = await fetch(`invoices/${fileName}`);
-                
-                if (!resp.ok) {
-                    throw new Error(`HTTP ${resp.status}`);
-                }
+                if (!resp.ok) return;
                 
                 const buf = await resp.arrayBuffer();
-                const data = new Uint8Array(buf);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(new Uint8Array(buf), { type: 'array' });
 
                 const baseName = fileName.replace(/\.[^.]+$/, '');
                 const invoiceCode = baseName.split('_')[0];
@@ -258,23 +204,183 @@
                     invoiceDesc: meta.invoiceDesc
                 };
                 
-                console.log(`✅ تم تحميل ${invoiceCode}: ${meta.items.length} صنف`);
-                
             } catch (err) {
-                console.error(`❌ خطأ في ${fileName}:`, err);
+                console.error(`خطأ في ${fileName}:`, err);
             }
         });
 
         await Promise.all(promises);
         
         const codes = Object.keys(invoices);
-        console.log('📊 إجمالي الفواتير المحملة:', codes.length);
-        
         if (codes.length === 0) {
-            statusDiv.textContent = 'لم يتم تحميل أي فاتورة. تأكد من هيكل Excel.';
+            statusDiv.textContent = 'لم يتم تحميل أي فاتورة صالحة.';
             statusDiv.className = 'error';
             return;
         }
         
-        statusDiv.textContent = `تم تحميل ${codes.length} فاتورة بنجاح ✓`;
-        statusDiv.className =
+        statusDiv.textContent = `تم تحميل ${codes.length} فاتورة ✓`;
+        statusDiv.className = 'success';
+        
+        invoiceSelect.innerHTML = '<option value="">— اختر فاتورة —</option>';
+        codes.sort().forEach(code => {
+            const inv = invoices[code];
+            const opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = `${code} (${inv.items.length || 0} صنف)`;
+            invoiceSelect.appendChild(opt);
+        });
+        invoiceSelect.disabled = false;
+    }
+
+    function extractInvoiceData(workbook) {
+        let accountName = '';
+        let invoiceDesc = '';
+        const items = [];
+
+        workbook.SheetNames.forEach(sheetName => {
+            const sheet = workbook.Sheets[sheetName];
+            if (!sheet) return;
+
+            const range = XLSX.utils.decode_range(sheet['!ref']);
+
+            if (!accountName) accountName = readMergedRow(sheet, [9, 10], 0, 20);
+            if (!invoiceDesc) invoiceDesc = readMergedRow(sheet, [11, 12], 0, 20);
+
+            let headerRow = -1;
+            let colDesc = -1, colQty = -1, colPrice = -1;
+
+            for (let r = 0; r <= range.e.r; r++) {
+                const rowValues = [];
+                for (let c = 0; c <= range.e.c; c++) {
+                    const cellAddr = XLSX.utils.encode_cell({ r, c });
+                    const cell = sheet[cellAddr];
+                    rowValues.push(cell ? String(cell.v || '').trim().toLowerCase() : '');
+                }
+
+                if (rowValues.some(v => v.includes('description')) &&
+                    rowValues.some(v => v.includes('qty')) &&
+                    rowValues.some(v => v.includes('price') || v.includes('u.'))) {
+                    
+                    headerRow = r;
+                    for (let c = 0; c <= range.e.c; c++) {
+                        const cellAddr = XLSX.utils.encode_cell({ r, c });
+                        const cell = sheet[cellAddr];
+                        const txt = cell ? String(cell.v || '').toLowerCase() : '';
+                        if (txt.includes('description')) colDesc = c;
+                        if (txt.includes('qty')) colQty = c;
+                        if (txt.includes('price') || txt.includes('u.')) colPrice = c;
+                    }
+                    break;
+                }
+            }
+
+            if (headerRow === -1 || colDesc === -1 || colQty === -1 || colPrice === -1) return;
+
+            for (let r = headerRow + 1; r <= range.e.r; r++) {
+                const descCell = sheet[XLSX.utils.encode_cell({ r, c: colDesc })];
+                const qtyCell  = sheet[XLSX.utils.encode_cell({ r, c: colQty })];
+                const priceCell= sheet[XLSX.utils.encode_cell({ r, c: colPrice })];
+
+                const desc = descCell ? String(descCell.v || '').trim() : '';
+                if (!desc) break;
+
+                items.push({
+                    sheetName: sheetName,
+                    row: r,
+                    colPrice: colPrice,
+                    description: desc,
+                    qty: qtyCell ? parseFloat(qtyCell.v) || 0 : 0,
+                    price: priceCell ? parseFloat(priceCell.v) || 0 : 0
+                });
+            }
+        });
+
+        return { accountName, invoiceDesc, items };
+    }
+
+    function readMergedRow(sheet, rowsArray, colStart, colEnd) {
+        let textParts = [];
+        rowsArray.forEach(r => {
+            for (let c = colStart; c <= colEnd; c++) {
+                const cellAddr = XLSX.utils.encode_cell({ r, c });
+                const cell = sheet[cellAddr];
+                if (cell && cell.v) textParts.push(String(cell.v).trim());
+            }
+        });
+        return Array.from(new Set(textParts.filter(Boolean))).join(' / ');
+    }
+
+    function handleInvoiceChange() {
+        const invoiceCode = invoiceSelect.value;
+        if (!invoiceCode || !invoices[invoiceCode]) return;
+
+        currentInvoiceCode = invoiceCode;
+        const inv = invoices[invoiceCode];
+
+        accountNameDiv.textContent = inv.accountName || 'غير متوفر';
+        invoiceDescDiv.textContent = inv.invoiceDesc || 'غير متوفر';
+
+        renderItemsTable(inv.items);
+        downloadBtn.disabled = inv.items.length === 0;
+    }
+
+    function renderItemsTable(items) {
+        itemsBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.description || ''}</td>
+                <td>${item.qty || ''}</td>
+                <td>
+                    <input type="number" step="0.01" class="price-input" 
+                           value="${item.price || ''}" data-index="${index}"
+                           style="width:100%; border:none; text-align:center;">
+                </td>
+            `;
+            itemsBody.appendChild(tr);
+        });
+
+        itemsBody.querySelectorAll('.price-input').forEach(input => {
+            input.addEventListener('focus', function() { this.select(); });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const idx = parseInt(this.dataset.index);
+                    const next = itemsBody.querySelector(`.price-input[data-index="${idx+1}"]`);
+                    if (next) next.focus();
+                }
+            });
+            input.addEventListener('change', function() {
+                const idx = parseInt(this.dataset.index);
+                invoices[currentInvoiceCode].items[idx].price = 
+                    this.value === '' ? '' : parseFloat(this.value);
+            });
+        });
+
+        if (items.length > 0) itemsBody.querySelector('.price-input').focus();
+    }
+
+    function handleDownload() {
+        if (!currentInvoiceCode) return;
+        const inv = invoices[currentInvoiceCode];
+
+        inv.items.forEach(item => {
+            const sheet = inv.workbook.Sheets[item.sheetName];
+            const cellAddr = XLSX.utils.encode_cell({ r: item.row, c: item.colPrice });
+            if (!sheet[cellAddr]) sheet[cellAddr] = { t: 'n', v: 0 };
+            sheet[cellAddr].t = 'n';
+            sheet[cellAddr].v = item.price === '' ? 0 : parseFloat(item.price);
+        });
+
+        const wbout = XLSX.write(inv.workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: "application/octet-stream" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = inv.fileName.replace('.xlsx', '_UPDATED.xlsx');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
