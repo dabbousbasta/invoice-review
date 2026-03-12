@@ -1,118 +1,36 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset
+    <meta charset="UTF-8">
     <title>مراجعة أسعار الفواتير - دبوس البسطة</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { 
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif; 
-            background: #f5f5f5; 
-            margin: 0; 
-            padding: 10px; 
-            box-sizing: border-box; 
-        }
-        .container { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: #fff; 
-            padding: 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
-        }
+        body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f5f5f5; margin: 0; padding: 10px; box-sizing: border-box; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         h1 { font-size: 20px; margin-top: 0; text-align: center; }
         .row { margin-bottom: 10px; }
         label { display: block; font-size: 14px; margin-bottom: 4px; }
-        select, button { 
-            width: 100%; 
-            font-size: 14px; 
-            padding: 6px 8px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            cursor: pointer; 
-            background: #007bff; 
-            color: #fff; 
-            border: none; 
-            border-radius: 4px; 
-            margin-top: 5px; 
-        }
+        select, button { width: 100%; font-size: 14px; padding: 6px 8px; box-sizing: border-box; }
+        button { cursor: pointer; background: #007bff; color: #fff; border: none; border-radius: 4px; margin-top: 5px; }
         button:disabled { background: #999; cursor: not-allowed; }
-        .info-box { 
-            background: #f0f4ff; 
-            border-radius: 4px; 
-            padding: 8px; 
-            margin-bottom: 10px; 
-            font-size: 13px; 
-            line-height: 1.5; 
-        }
+        .info-box { background: #f0f4ff; border-radius: 4px; padding: 8px; margin-bottom: 10px; font-size: 13px; line-height: 1.5; }
         .label-title { font-weight: bold; }
-        .value-box { 
-            background: #fafafa; 
-            border-radius: 4px; 
-            padding: 6px; 
-            margin-top: 4px; 
-            font-size: 13px; 
-            border: 1px solid #ddd; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            font-size: 13px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 4px 6px; 
-            text-align: center; 
-        }
-        th { 
-            background: #f0f0f0; 
-            position: sticky; 
-            top: 0; 
-            z-index: 1; 
-        }
+        .value-box { background: #fafafa; border-radius: 4px; padding: 6px; margin-top: 4px; font-size: 13px; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: center; }
+        th { background: #f0f0f0; position: sticky; top: 0; z-index: 1; }
         tbody tr:nth-child(odd) { background: #fcfcfc; }
         tbody tr:nth-child(even) { background: #f6f6f6; }
-        .price-input { 
-            width: 100%; 
-            border: none; 
-            background: transparent; 
-            text-align: center; 
-            font-size: 13px; 
-            padding: 2px; 
-            box-sizing: border-box; 
-        }
-        .price-input:focus { 
-            outline: 2px solid #007bff; 
-            background: #fff; 
-        }
-        .table-container { 
-            max-height: 60vh; 
-            overflow: auto; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-            margin-top: 10px; 
-        }
-        .footer-note { 
-            font-size: 11px; 
-            color: #666; 
-            margin-top: 10px; 
-            text-align: center; 
-        }
+        .price-input { width: 100%; border: none; background: transparent; text-align: center; font-size: 13px; padding: 2px; box-sizing: border-box; }
+        .price-input:focus { outline: 2px solid #007bff; background: #fff; }
+        .table-container { max-height: 60vh; overflow: auto; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px; }
+        .footer-note { font-size: 11px; color: #666; margin-top: 10px; text-align: center; }
         .loading { font-size: 13px; color: #555; }
         .error { font-size: 13px; color: #b00020; }
         .success { color: #0a6c00; }
-        .download-buttons { 
-            display: flex; 
-            gap: 10px; 
-            flex-wrap: wrap; 
-        }
-        .download-buttons button { 
-            flex: 1; 
-            min-width: 120px; 
-        }
+        .download-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .download-buttons button { flex: 1; min-width: 120px; }
         .download-original { background: #28a745; }
         .download-simple { background: #17a2b8; }
         .whatsapp-share { background: #25D366 !important; }
@@ -123,7 +41,7 @@
     <h1>مراجعة وتعديل أسعار الفواتير</h1>
     <div class="info-box">
         جميع ملفات Excel في <code>invoices/</code> تُحمل تلقائياً.<br>
-        <strong>📱 إرسال للواتساب</strong> = تحميل + مشاركة Excel مباشرة (RTL + عرض تلقائي)
+        <strong>📱 إرسال للواتساب</strong> = تحميل + مشاركة Excel مباشرة
     </div>
 
     <div id="status" class="loading">جاري فحص ملفات Excel...</div>
@@ -154,18 +72,10 @@
     <div class="table-container">
         <table>
             <thead>
-                <tr>
-                    <th>الوصف (Description)</th>
-                    <th>الكمية (Qty)</th>
-                    <th>السعر الافرادي (U.Price)</th>
-                </tr>
+                <tr><th>الوصف</th><th>الكمية</th><th>السعر (U.Price)</th></tr>
             </thead>
             <tbody id="itemsBody"></tbody>
         </table>
-    </div>
-
-    <div class="footer-note">
-        اضغط Enter للانتقال بين الأسعار | جميع الملفات RTL + عرض تلقائي للأعمدة
     </div>
 </div>
 
@@ -174,7 +84,7 @@
     let currentInvoiceCode = null;
     let currentInvoiceData = null;
 
-    // DOM Elements
+    // Elements
     const invoiceSelect = document.getElementById('invoiceSelect');
     const accountNameDiv = document.getElementById('accountName');
     const invoiceDescDiv = document.getElementById('invoiceDescription');
@@ -190,74 +100,13 @@
     downloadSimpleBtn.addEventListener('click', handleDownloadSimple);
     whatsappShareBtn.addEventListener('click', handleWhatsAppShare);
 
-    // Start
+    // 🔍 اكتشاف تلقائي لملفات Excel
     discoverExcelFiles();
-
-    // 🔥 دالة إنشاء ورقة RTL مع عرض تلقائي للأعمدة
-    function createArabicWorksheet(ws_data) {
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        
-        // RTL لكل الخلايا
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        for (let R = range.s.r; R <= range.e.r; ++R) {
-            for (let C = range.s.c; C <= range.e.c; ++C) {
-                const cell_address = XLSX.utils.encode_cell({ c: C, r: R });
-                if (ws[cell_address]) {
-                    ws[cell_address].z = '@';
-                    if (!ws[cell_address].s) ws[cell_address].s = {};
-                    ws[cell_address].s.alignment = {
-                        horizontal: "right",
-                        vertical: "center",
-                        readingOrder: 2 // RTL
-                    };
-                }
-            }
-        }
-
-        // عرض تلقائي للأعمدة
-        const colWidths = [];
-        for (let i = 0; i <= range.e.c; i++) {
-            let maxLength = 0;
-            for (let row = 0; row <= range.e.r; row++) {
-                const cellAddr = XLSX.utils.encode_cell({ c: i, r: row });
-                if (ws[cellAddr] && ws[cellAddr].v) {
-                    const len = String(ws[cellAddr].v).length;
-                    maxLength = Math.max(maxLength, len);
-                }
-            }
-            colWidths[i] = { wch: Math.min(Math.max(maxLength + 2, 15), 60) };
-        }
-        ws['!cols'] = colWidths;
-
-        // تنسيق رأس الجدول
-        const headerRow = 5;
-        for (let C = 0; C <= range.e.c; C++) {
-            const cellAddr = XLSX.utils.encode_cell({ c: C, r: headerRow });
-            if (ws[cellAddr]) {
-                ws[cellAddr].s = {
-                    font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-                    fill: { fgColor: { rgb: "007BFF" } },
-                    alignment: { 
-                        horizontal: "center", 
-                        vertical: "center", 
-                        readingOrder: 2,
-                        wrapText: true
-                    }
-                };
-            }
-        }
-
-        // RTL للشيت كامل
-        ws['!sheetView'] = [{
-            rightToLeft: true
-        }];
-
-        return ws;
-    }
 
     async function discoverExcelFiles() {
         statusDiv.textContent = 'جاري فحص مجلد invoices/...';
         
+        // محاولة ملفات معروفة أولاً
         const knownFiles = [
             'SA-88_53000101_260312_150337.xlsx',
             'SA-89_53000101_260312_150337.xlsx',
@@ -268,15 +117,11 @@
         for (let fileName of knownFiles) {
             try {
                 const resp = await fetch(`invoices/${fileName}`);
-                if (resp.ok) {
-                    existingFiles.push(fileName);
-                    console.log(`✅ وُجد: ${fileName}`);
-                }
-            } catch(e) {
-                console.log(`❌ غير موجود: ${fileName}`);
-            }
+                if (resp.ok) existingFiles.push(fileName);
+            } catch(e) {}
         }
         
+        console.log('📋 الملفات الموجودة:', existingFiles);
         await loadAllInvoices(existingFiles);
     }
 
@@ -309,8 +154,6 @@
                     accountName: meta.accountName,
                     invoiceDesc: meta.invoiceDesc
                 };
-                
-                console.log(`✅ ${invoiceCode}: ${meta.items.length} صنف`);
                 
             } catch (err) {
                 console.error(`خطأ في ${fileName}:`, err);
@@ -349,9 +192,11 @@
 
             const range = XLSX.utils.decode_range(sheet['!ref']);
 
+            // قراءة بيانات الفاتورة
             accountName = readMergedRow(sheet, [9, 10], 0, 20);
             invoiceDesc = readMergedRow(sheet, [11, 12], 0, 20);
 
+            // البحث عن الجدول
             let headerRow = -1, colDesc = -1, colQty = -1, colPrice = -1;
             
             for (let r = 0; r <= Math.min(range.e.r, 50); r++) {
@@ -382,5 +227,176 @@
 
             if (headerRow === -1 || colDesc === -1 || colQty === -1 || colPrice === -1) return;
 
-            for (let r =
+            // قراءة الأصناف
+            for (let r = headerRow + 1; r <= range.e.r; r++) {
+                const descCell = sheet[XLSX.utils.encode_cell({ r, c: colDesc })];
+                const qtyCell = sheet[XLSX.utils.encode_cell({ r, c: colQty })];
+                const priceCell = sheet[XLSX.utils.encode_cell({ r, c: colPrice })];
 
+                const desc = descCell ? String(descCell.v || '').trim() : '';
+                if (!desc || desc.length < 2) break;
+
+                items.push({
+                    sheetName: sheetName,
+                    row: r,
+                    colPrice: colPrice,
+                    description: desc,
+                    qty: qtyCell ? parseFloat(qtyCell.v) || 0 : 0,
+                    price: priceCell ? parseFloat(priceCell.v) || 0 : 0
+                });
+            }
+        });
+
+        return { accountName, invoiceDesc, items };
+    }
+
+    function readMergedRow(sheet, rowsArray, colStart, colEnd) {
+        let textParts = [];
+        rowsArray.forEach(r => {
+            for (let c = colStart; c <= colEnd; c++) {
+                const cellAddr = XLSX.utils.encode_cell({ r, c });
+                const cell = sheet[cellAddr];
+                if (cell && cell.v) textParts.push(String(cell.v).trim());
+            }
+        });
+        return Array.from(new Set(textParts.filter(Boolean))).join(' / ');
+    }
+
+    // ✅ دالة handleInvoiceChange المفقودة
+    function handleInvoiceChange() {
+        const invoiceCode = invoiceSelect.value;
+        if (!invoiceCode || !invoices[invoiceCode]) return;
+
+        currentInvoiceCode = invoiceCode;
+        currentInvoiceData = invoices[invoiceCode];
+        const inv = currentInvoiceData;
+
+        accountNameDiv.textContent = inv.accountName || 'غير متوفر';
+        invoiceDescDiv.textContent = inv.invoiceDesc || 'غير متوفر';
+
+        renderItemsTable(inv.items);
+        downloadOriginalBtn.disabled = inv.items.length === 0;
+        downloadSimpleBtn.disabled = inv.items.length === 0;
+        whatsappShareBtn.disabled = inv.items.length === 0;
+    }
+
+    function renderItemsTable(items) {
+        itemsBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.description || ''}</td>
+                <td>${item.qty || ''}</td>
+                <td><input type="number" step="0.01" class="price-input" 
+                           value="${item.price || ''}" data-index="${index}"></td>
+            `;
+            itemsBody.appendChild(tr);
+        });
+
+        itemsBody.querySelectorAll('.price-input').forEach((input, idx) => {
+            input.addEventListener('focus', function() { this.select(); });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextInput = itemsBody.querySelector(`input[data-index="${idx+1}"]`);
+                    if (nextInput) nextInput.focus();
+                }
+            });
+            input.addEventListener('input', function() {
+                const idx = parseInt(this.dataset.index);
+                currentInvoiceData.items[idx].price = this.value === '' ? '' : parseFloat(this.value);
+            });
+        });
+
+        if (items.length > 0) itemsBody.querySelector('.price-input')?.focus();
+    }
+
+    function handleDownloadOriginal() {
+        if (!currentInvoiceData) return;
+        const inv = currentInvoiceData;
+
+        inv.items.forEach(item => {
+            const sheet = inv.workbook.Sheets[item.sheetName];
+            const cellAddr = XLSX.utils.encode_cell({ r: item.row, c: item.colPrice });
+            if (!sheet[cellAddr]) sheet[cellAddr] = { t: 'n', v: 0 };
+            sheet[cellAddr].t = 'n';
+            sheet[cellAddr].v = item.price === '' ? 0 : parseFloat(item.price || 0);
+        });
+
+        const wbout = XLSX.write(inv.workbook, { bookType: 'xlsx', type: 'array' });
+        downloadFile(wbout, inv.fileName.replace('.xlsx', '_محدث.xlsx'));
+    }
+
+    function handleDownloadSimple() {
+        if (!currentInvoiceData) return;
+        const wb = XLSX.utils.book_new();
+        const ws_data = [
+            [`رقم الفاتورة: ${currentInvoiceCode}`],
+            [''],
+            [`اسم الحساب: ${currentInvoiceData.accountName || 'غير محدد'}`],
+            [`بيان الفاتورة: ${currentInvoiceData.invoiceDesc || 'غير محدد'}`],
+            [''],
+            ['الوصف', 'الكمية', 'السعر الافرادي (U.Price)']
+        ];
+
+        currentInvoiceData.items.forEach(item => {
+            ws_data.push([item.description || '', item.qty || 0, item.price !== undefined && item.price !== '' ? item.price : 0]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, 'فاتورة محدثة');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        downloadFile(wbout, `${currentInvoiceCode}_مبسط.xlsx`);
+    }
+
+    async function handleWhatsAppShare() {
+        if (!currentInvoiceData) return;
+
+        const wb = XLSX.utils.book_new();
+        const ws_data = [
+            [`رقم الفاتورة: ${currentInvoiceCode}`],
+            [''],
+            [`اسم الحساب: ${currentInvoiceData.accountName || 'غير محدد'}`],
+            [`بيان الفاتورة: ${currentInvoiceData.invoiceDesc || 'غير محدد'}`],
+            [''],
+            ['الوصف', 'الكمية', 'السعر الافرادي (U.Price)']
+        ];
+
+        currentInvoiceData.items.forEach(item => {
+            ws_data.push([item.description || '', item.qty || 0, item.price !== undefined && item.price !== '' ? item.price : 0]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, 'فاتورة محدثة');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+        const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const file = new File([blob], `${currentInvoiceCode}_محدث.xlsx`, { type: blob.type });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: `فاتورة ${currentInvoiceCode} محدثة`,
+                    text: `تم تحديث أسعار الفاتورة ${currentInvoiceCode}`
+                });
+            } catch (err) {
+                downloadFile(wbout, `${currentInvoiceCode}_محدث.xlsx`);
+            }
+        } else {
+            downloadFile(wbout, `${currentInvoiceCode}_محدث.xlsx`);
+        }
+    }
+
+    function downloadFile(wbout, filename) {
+        const blob = new Blob([wbout], { type: "application/octet-stream" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
