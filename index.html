@@ -5,9 +5,8 @@
     <title>مراجعة أسعار الفواتير - دبوس البسطة</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
-            integrity="sha512-sZ0gC1h3iLRt2nxS0YdCYrRBiQgpAmmclWZ1WhxnBSiyDI1HvcBHbRTrWJGN8s6S3Gz0bPGzDF8FHqk6Vqt9Nw=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- SheetJS بدون integrity لتجنب المشكلة -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         body {
@@ -132,6 +131,9 @@
             font-size: 13px;
             color: #b00020;
         }
+        .success {
+            color: #0a6c00;
+        }
     </style>
 </head>
 <body>
@@ -139,14 +141,14 @@
     <h1>مراجعة وتعديل أسعار الفواتير</h1>
 
     <div class="info-box">
-        يتم تحميل ملفات الفواتير تلقائياً من المجلد <code>invoices/</code> في نفس الموقع.<br>
-        عدّل الأسعار في عمود U.Price فقط، واضغط Enter للانتقال إلى الصنف التالي، ثم حمّل ملف Excel بالتعديلات.
+        يتم تحميل ملفات الفواتير تلقائياً من المجلد <code>invoices/</code>.<br>
+        عدّل الأسعار في عمود U.Price، اضغط Enter للانتقال للصنف التالي.
     </div>
 
     <div id="status" class="loading">جاري تحميل قائمة الفواتير...</div>
 
     <div class="row">
-        <label for="invoiceSelect">اختيار الفاتورة (حسب رقم الفاتورة SA-xx من اسم الملف):</label>
+        <label for="invoiceSelect">اختيار الفاتورة:</label>
         <select id="invoiceSelect" disabled>
             <option value="">— اختر فاتورة —</option>
         </select>
@@ -181,11 +183,14 @@
     </div>
 
     <div class="footer-note">
-        ملاحظة: التعديلات تحفظ داخل هذه الصفحة فقط؛ لتحفظها في Excel يجب تحميل الملف المعدَّل من الزر أعلاه.
+        التعديلات تحفظ في Excel عند التحميل فقط.
     </div>
 </div>
 
 <script>
+    console.log('✅ بدء تحميل الصفحة');
+    console.log('✅ XLSX متوفر:', typeof XLSX !== 'undefined');
+
     const invoices = {};
     let currentInvoiceCode = null;
 
@@ -199,282 +204,77 @@
     invoiceSelect.addEventListener('change', handleInvoiceChange);
     downloadBtn.addEventListener('click', handleDownload);
 
-    // عند فتح الصفحة: تحميل قائمة الملفات من invoices/list.json
     loadInvoicesList();
 
-    function loadInvoicesList() {
-        fetch('invoices/list.json?_=' + Date.now())
-            .then(resp => {
-                if (!resp.ok) throw new Error('تعذر قراءة invoices/list.json');
-                return resp.json();
-            })
-            .then(fileList => {
-                if (!Array.isArray(fileList) || fileList.length === 0) {
-                    statusDiv.textContent = 'لا توجد فواتير في القائمة (تأكد من ملف invoices/list.json).';
-                    statusDiv.className = 'error';
-                    return;
-                }
-                statusDiv.textContent = 'جاري تحميل ملفات الفواتير...';
-                statusDiv.className = 'loading';
-                return loadAllInvoiceFiles(fileList);
-            })
-            .catch(err => {
-                statusDiv.textContent = 'خطأ في تحميل قائمة الفواتير: ' + err.message;
-                statusDiv.className = 'error';
-            });
-    }
-
-    function loadAllInvoiceFiles(fileList) {
-        const promises = fileList.map(fileName => {
-            const url = 'invoices/' + fileName;
-            return fetch(url)
-                .then(resp => {
-                    if (!resp.ok) throw new Error('تعذر قراءة ' + fileName);
-                    return resp.arrayBuffer();
-                })
-                .then(buf => {
-                    const data = new Uint8Array(buf);
-                    const workbook = XLSX.read(data, { type: 'array' });
-
-                    const baseName = fileName.replace(/\.[^.]+$/, '');
-                    const invoiceCode = baseName.split('_')[0]; // SA-88
-
-                    const meta = extractInvoiceData(workbook);
-
-                    invoices[invoiceCode] = {
-                        fileName: fileName,
-                        workbook: workbook,
-                        items: meta.items,
-                        accountName: meta.accountName,
-                        invoiceDesc: meta.invoiceDesc
-                    };
-                })
-                .catch(err => {
-                    console.error('Error loading', fileName, err);
-                });
-        });
-
-        Promise.all(promises).then(() => {
-            const codes = Object.keys(invoices);
-            if (codes.length === 0) {
-                statusDiv.textContent = 'لم يتم تحميل أي فاتورة بنجاح. تأكد من الأسماء والملفات.';
-                statusDiv.className = 'error';
-                return;
-            }
-            statusDiv.textContent = 'تم تحميل ' + codes.length + ' فاتورة. اختر الفاتورة من القائمة.';
+    async function loadInvoicesList() {
+        try {
+            statusDiv.textContent = 'جاري تحميل قائمة الفواتير...';
             statusDiv.className = 'loading';
-
-            invoiceSelect.innerHTML = '<option value="">— اختر فاتورة —</option>';
-            codes.sort().forEach(code => {
-                const inv = invoices[code];
-                const opt = document.createElement('option');
-                opt.value = code;
-                opt.textContent = code + ' (' + inv.fileName + ')';
-                invoiceSelect.appendChild(opt);
-            });
-            invoiceSelect.disabled = false;
-        });
+            
+            console.log('📥 جاري تحميل invoices/list.json');
+            const resp = await fetch('invoices/list.json');
+            
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+            }
+            
+            const fileList = await resp.json();
+            console.log('✅ قائمة الملفات:', fileList);
+            
+            statusDiv.textContent = `جاري تحميل ${fileList.length} ملف فاتورة...`;
+            await loadAllInvoiceFiles(fileList);
+            
+        } catch (err) {
+            console.error('❌ خطأ في list.json:', err);
+            statusDiv.innerHTML = `خطأ في <code>invoices/list.json</code><br>${err.message}`;
+            statusDiv.className = 'error';
+        }
     }
 
-    function extractInvoiceData(workbook) {
-        let accountName = '';
-        let invoiceDesc = '';
-        const items = [];
-
-        workbook.SheetNames.forEach(sheetName => {
-            const sheet = workbook.Sheets[sheetName];
-            if (!sheet) return;
-
-            const range = XLSX.utils.decode_range(sheet['!ref']);
-
-            if (!accountName || !invoiceDesc) {
-                const accountRows = [9, 10]; // 10 و 11 (0-based)
-                const descRows    = [11, 12]; // 12 و 13 (0-based)
-                accountName = readMergedRow(sheet, accountRows, 0, 20) || accountName;
-                invoiceDesc = readMergedRow(sheet, descRows, 0, 20) || invoiceDesc;
-            }
-
-            let headerRowIndex = -1;
-            let colDesc = -1, colQty = -1, colPrice = -1;
-
-            for (let r = range.s.r; r <= range.e.r; r++) {
-                const rowValues = [];
-                for (let c = range.s.c; c <= range.e.c; c++) {
-                    const cellAddr = XLSX.utils.encode_cell({ r, c });
-                    const cell = sheet[cellAddr];
-                    const v = cell ? String(cell.v).trim() : '';
-                    rowValues.push(v);
+    async function loadAllInvoiceFiles(fileList) {
+        const promises = fileList.map(async (fileName) => {
+            try {
+                console.log(`📥 تحميل ${fileName}`);
+                const resp = await fetch(`invoices/${fileName}`);
+                
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}`);
                 }
-                const rowJoined = rowValues.join('|').toLowerCase();
-                if (rowJoined.includes('description') && rowJoined.includes('qty') && rowJoined.includes('u.price')) {
-                    headerRowIndex = r;
-                    for (let c = range.s.c; c <= range.e.c; c++) {
-                        const cellAddr = XLSX.utils.encode_cell({ r, c });
-                        const cell = sheet[cellAddr];
-                        const txt = cell ? String(cell.v).toLowerCase() : '';
-                        if (txt.includes('description')) colDesc = c;
-                        if (txt.includes('qty'))         colQty  = c;
-                        if (txt.includes('u.price'))     colPrice = c;
-                    }
-                    break;
-                }
-            }
+                
+                const buf = await resp.arrayBuffer();
+                const data = new Uint8Array(buf);
+                const workbook = XLSX.read(data, { type: 'array' });
 
-            if (headerRowIndex === -1 || colDesc === -1 || colQty === -1 || colPrice === -1) {
-                return;
-            }
+                const baseName = fileName.replace(/\.[^.]+$/, '');
+                const invoiceCode = baseName.split('_')[0];
 
-            for (let r = headerRowIndex + 1; r <= range.e.r; r++) {
-                const descCell = sheet[XLSX.utils.encode_cell({ r, c: colDesc })];
-                const qtyCell  = sheet[XLSX.utils.encode_cell({ r, c: colQty })];
-                const priceCell= sheet[XLSX.utils.encode_cell({ r, c: colPrice })];
-
-                const desc = descCell ? String(descCell.v).trim() : '';
-                const qty  = qtyCell  ? Number(qtyCell.v) : '';
-                const price= priceCell? Number(priceCell.v) : '';
-
-                if (!desc && !qty && !price) break;
-
-                items.push({
-                    sheetName: sheetName,
-                    row: r,
-                    colPrice: colPrice,
-                    description: desc,
-                    qty: qty,
-                    price: price
-                });
+                const meta = extractInvoiceData(workbook);
+                
+                invoices[invoiceCode] = {
+                    fileName: fileName,
+                    workbook: workbook,
+                    items: meta.items,
+                    accountName: meta.accountName,
+                    invoiceDesc: meta.invoiceDesc
+                };
+                
+                console.log(`✅ تم تحميل ${invoiceCode}: ${meta.items.length} صنف`);
+                
+            } catch (err) {
+                console.error(`❌ خطأ في ${fileName}:`, err);
             }
         });
 
-        return { accountName, invoiceDesc, items };
-    }
-
-    function readMergedRow(sheet, rowsArray, colStart, colEnd) {
-        let textParts = [];
-        rowsArray.forEach(r => {
-            for (let c = colStart; c <= colEnd; c++) {
-                const cellAddr = XLSX.utils.encode_cell({ r, c });
-                const cell = sheet[cellAddr];
-                if (cell && cell.v) {
-                    textParts.push(String(cell.v).trim());
-                }
-            }
-        });
-        const unique = Array.from(new Set(textParts)).filter(Boolean);
-        return unique.join(' / ');
-    }
-
-    function handleInvoiceChange() {
-        const invoiceCode = invoiceSelect.value;
-        if (!invoiceCode || !invoices[invoiceCode]) {
-            itemsBody.innerHTML = '';
-            accountNameDiv.textContent = '—';
-            invoiceDescDiv.textContent = '—';
-            downloadBtn.disabled = true;
-            currentInvoiceCode = null;
+        await Promise.all(promises);
+        
+        const codes = Object.keys(invoices);
+        console.log('📊 إجمالي الفواتير المحملة:', codes.length);
+        
+        if (codes.length === 0) {
+            statusDiv.textContent = 'لم يتم تحميل أي فاتورة. تأكد من هيكل Excel.';
+            statusDiv.className = 'error';
             return;
         }
-
-        currentInvoiceCode = invoiceCode;
-        const inv = invoices[invoiceCode];
-
-        accountNameDiv.textContent = inv.accountName || '—';
-        invoiceDescDiv.textContent = inv.invoiceDesc || '—';
-
-        renderItemsTable(inv.items);
-        downloadBtn.disabled = inv.items.length === 0;
-    }
-
-    function renderItemsTable(items) {
-        itemsBody.innerHTML = '';
-
-        items.forEach((item, index) => {
-            const tr = document.createElement('tr');
-
-            const tdDesc = document.createElement('td');
-            tdDesc.textContent = item.description || '';
-            tr.appendChild(tdDesc);
-
-            const tdQty = document.createElement('td');
-            tdQty.textContent = item.qty !== undefined && item.qty !== null ? item.qty : '';
-            tr.appendChild(tdQty);
-
-            const tdPrice = document.createElement('td');
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.step = '0.01';
-            input.className = 'price-input';
-            input.value = (item.price !== undefined && item.price !== null && item.price !== '') ? item.price : '';
-            input.dataset.index = index;
-
-            input.addEventListener('focus', function() {
-                this.select();
-            });
-
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const idx = parseInt(this.dataset.index, 10);
-                    const nextInput = itemsBody.querySelector('input.price-input[data-index="' + (idx + 1) + '"]');
-                    if (nextInput) {
-                        nextInput.focus();
-                    } else {
-                        this.blur();
-                    }
-                }
-            });
-
-            input.addEventListener('change', function() {
-                const idx = parseInt(this.dataset.index, 10);
-                const v = this.value === '' ? '' : Number(this.value);
-                const inv = invoices[currentInvoiceCode];
-                if (inv && inv.items[idx]) {
-                    inv.items[idx].price = v;
-                }
-            });
-
-            tdPrice.appendChild(input);
-            tr.appendChild(tdPrice);
-
-            itemsBody.appendChild(tr);
-        });
-
-        const firstInput = itemsBody.querySelector('input.price-input[data-index="0"]');
-        if (firstInput) firstInput.focus();
-    }
-
-    function handleDownload() {
-        if (!currentInvoiceCode) return;
-        const inv = invoices[currentInvoiceCode];
-        if (!inv) return;
-
-        const wb = inv.workbook;
-
-        inv.items.forEach(item => {
-            const sheet = wb.Sheets[item.sheetName];
-            if (!sheet) return;
-            const cellAddr = XLSX.utils.encode_cell({ r: item.row, c: item.colPrice });
-            if (!sheet[cellAddr]) sheet[cellAddr] = { t: 'n', v: 0 };
-            sheet[cellAddr].t = 'n';
-            sheet[cellAddr].v = item.price === '' || item.price === null || item.price === undefined
-                ? ''
-                : Number(item.price);
-        });
-
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([wbout], { type: "application/octet-stream" });
-
-        const baseName = inv.fileName.replace(/\.[^.]+$/, '');
-        const newFileName = baseName + "_UPDATED.xlsx";
-
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = newFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    }
-</script>
-</body>
-</html>
+        
+        statusDiv.textContent = `تم تحميل ${codes.length} فاتورة بنجاح ✓`;
+        statusDiv.className =
