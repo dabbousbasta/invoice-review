@@ -139,17 +139,15 @@ async function discoverFiles(){
 
 try{
 
-const res=await fetch("invoices/")
-const text=await res.text()
+const res = await fetch("invoices/list.php")
 
-const files=[...text.matchAll(/href="([^"]+\.xlsx)"/g)]
-.map(m=>m[1])
+const files = await res.json()
 
 loadInvoices(files)
 
-}catch{
+}catch(e){
 
-alert("تعذر قراءة مجلد invoices")
+alert("فشل تحميل الفواتير")
 
 }
 
@@ -518,3 +516,4 @@ document.getElementById("shareWA").onclick=shareWhatsApp
 
 </body>
 </html>
+
