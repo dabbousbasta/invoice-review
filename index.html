@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
+
 <meta charset="UTF-8">
-<title>مراجعة أسعار الفواتير</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>مراجعة أسعار الفواتير</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -12,7 +15,6 @@
 body{
 font-family:system-ui;
 background:#f5f5f5;
-margin:0;
 padding:10px
 }
 
@@ -45,15 +47,19 @@ border:none;
 text-align:center
 }
 
-.price-input.modified{
+.modified{
 background:#ffe7a3;
 font-weight:bold
 }
 
-.download-buttons{
-display:flex;
-gap:10px;
-margin:10px 0
+.total{
+margin-top:10px;
+font-size:18px;
+font-weight:bold;
+text-align:center;
+background:#eef6ff;
+padding:8px;
+border-radius:6px
 }
 
 button{
@@ -64,37 +70,36 @@ color:#fff;
 cursor:pointer
 }
 
-.download-original{background:#28a745}
-.download-simple{background:#17a2b8}
-.whatsapp-share{background:#25D366}
+.green{background:#28a745}
+.blue{background:#17a2b8}
+.wa{background:#25D366}
 
-.total-box{
-margin-top:10px;
-font-size:18px;
-font-weight:bold;
-text-align:center;
-background:#f0f7ff;
-padding:8px;
-border-radius:6px
+.controls{
+display:flex;
+gap:10px;
+margin:10px 0
 }
 
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-<h2>مراجعة وتعديل أسعار الفواتير</h2>
+<h2>مراجعة الفواتير</h2>
 
-<select id="invoiceSelect" disabled>
-<option value="">— اختر فاتورة —</option>
+<select id="invoiceSelect">
+<option>تحميل الفواتير...</option>
 </select>
 
-<div class="download-buttons">
-<button id="downloadOriginalBtn" disabled class="download-original">الأصلي المحدث</button>
-<button id="downloadSimpleBtn" disabled class="download-simple">النسخة المبسطة</button>
-<button id="whatsappShareBtn" disabled class="whatsapp-share">📱 إرسال واتساب</button>
+<div class="controls">
+
+<button id="downloadOriginal" class="green">تحميل الأصلي</button>
+<button id="downloadSimple" class="blue">تحميل مبسط</button>
+<button id="shareWA" class="wa">إرسال واتساب</button>
+
 </div>
 
 <table>
@@ -107,142 +112,129 @@ border-radius:6px
 </tr>
 </thead>
 
-<tbody id="itemsBody"></tbody>
+<tbody id="items"></tbody>
 
 </table>
 
-<div id="totalBox" class="total-box">
-إجمالي الفاتورة: 0
-</div>
+<div id="total" class="total">إجمالي الفاتورة: 0</div>
 
 </div>
 
 <script>
 
 const invoices={}
-let currentInvoiceCode=null
-let currentInvoiceData=null
+let currentInvoice=null
 
-const invoiceSelect=document.getElementById('invoiceSelect')
-const itemsBody=document.getElementById('itemsBody')
-const totalBox=document.getElementById('totalBox')
+const select=document.getElementById("invoiceSelect")
+const itemsBody=document.getElementById("items")
+const totalBox=document.getElementById("total")
 
-const downloadOriginalBtn=document.getElementById('downloadOriginalBtn')
-const downloadSimpleBtn=document.getElementById('downloadSimpleBtn')
-const whatsappShareBtn=document.getElementById('whatsappShareBtn')
+const STORAGE_KEY="invoice_edits"
 
-invoiceSelect.addEventListener('change',handleInvoiceChange)
-downloadOriginalBtn.addEventListener('click',handleDownloadOriginal)
-downloadSimpleBtn.addEventListener('click',handleDownloadSimple)
-whatsappShareBtn.addEventListener('click',handleWhatsAppShare)
+let savedEdits=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")
 
-discoverExcelFiles()
+discoverFiles()
 
-async function discoverExcelFiles(){
-
-const knownFiles=[
-'SA-88_53000101_260312_150337.xlsx',
-'SA-89_53000101_260312_150337.xlsx',
-'SA-90_53000101_260312_150337.xlsx'
-]
-
-const existing=[]
-
-for(let file of knownFiles){
+async function discoverFiles(){
 
 try{
-const r=await fetch(`invoices/${file}`)
-if(r.ok)existing.push(file)
-}catch(e){}
+
+const res=await fetch("invoices/")
+const text=await res.text()
+
+const files=[...text.matchAll(/href="([^"]+\.xlsx)"/g)]
+.map(m=>m[1])
+
+loadInvoices(files)
+
+}catch{
+
+alert("تعذر قراءة مجلد invoices")
 
 }
 
-loadAllInvoices(existing)
-
 }
 
-async function loadAllInvoices(files){
+async function loadInvoices(files){
 
 for(let file of files){
 
-const resp=await fetch(`invoices/${file}`)
+const resp=await fetch("invoices/"+file)
+
 const buf=await resp.arrayBuffer()
 
-const workbook=XLSX.read(new Uint8Array(buf),{type:'array'})
+const wb=XLSX.read(buf)
 
-const code=file.split('_')[0]
+const code=file.split("_")[0]
 
-const meta=extractInvoiceData(workbook)
+const data=extractData(wb)
 
 invoices[code]={
-fileName:file,
-workbook:workbook,
-items:meta.items
+
+file:file,
+workbook:wb,
+items:data.items
+
+}
+
+const opt=document.createElement("option")
+opt.value=code
+opt.textContent=code
+select.appendChild(opt)
+
 }
 
 }
 
-const codes=Object.keys(invoices)
-
-codes.forEach(c=>{
-const opt=document.createElement('option')
-opt.value=c
-opt.textContent=c
-invoiceSelect.appendChild(opt)
-})
-
-invoiceSelect.disabled=false
-
-}
-
-function extractInvoiceData(workbook){
+function extractData(workbook){
 
 let items=[]
 
-workbook.SheetNames.forEach(sheetName=>{
+workbook.SheetNames.forEach(name=>{
 
-const sheet=workbook.Sheets[sheetName]
+const sheet=workbook.Sheets[name]
 const range=XLSX.utils.decode_range(sheet['!ref'])
 
-let headerRow=-1
-let colDesc=-1
-let colQty=-1
-let colPrice=-1
+let header=-1
+let desc=-1
+let qty=-1
+let price=-1
 
-for(let r=0;r<30;r++){
+for(let r=0;r<40;r++){
 
 for(let c=0;c<20;c++){
 
 const cell=sheet[XLSX.utils.encode_cell({r,c})]
+
 const txt=cell?String(cell.v).toLowerCase():""
 
-if(txt.includes('description')){headerRow=r;colDesc=c}
-if(txt.includes('qty'))colQty=c
-if(txt.includes('price')||txt.includes('u.'))colPrice=c
+if(txt.includes("description")){header=r;desc=c}
+if(txt.includes("qty"))qty=c
+if(txt.includes("price"))price=c
 
 }
 
 }
 
-if(headerRow==-1)return
+if(header==-1)return
 
-for(let r=headerRow+1;r<=range.e.r;r++){
+for(let r=header+1;r<=range.e.r;r++){
 
-const descCell=sheet[XLSX.utils.encode_cell({r,c:colDesc})]
-const qtyCell=sheet[XLSX.utils.encode_cell({r,c:colQty})]
-const priceCell=sheet[XLSX.utils.encode_cell({r,c:colPrice})]
+const d=sheet[XLSX.utils.encode_cell({r,c:desc})]
+const q=sheet[XLSX.utils.encode_cell({r,c:qty})]
+const p=sheet[XLSX.utils.encode_cell({r,c:price})]
 
-if(!descCell)break
+if(!d)break
 
 items.push({
 
-sheetName:sheetName,
+sheet:name,
 row:r,
-colPrice:colPrice,
-description:String(descCell.v),
-qty:qtyCell?qtyCell.v:0,
-price:priceCell?priceCell.v:0,
-originalPrice:priceCell?priceCell.v:0
+col:price,
+desc:String(d.v),
+qty:q?q.v:0,
+price:p?p.v:0,
+original:p?p.v:0
 
 })
 
@@ -254,41 +246,35 @@ return{items}
 
 }
 
-function handleInvoiceChange(){
+select.addEventListener("change",()=>{
 
-const code=invoiceSelect.value
-if(!code)return
+const code=select.value
 
-currentInvoiceCode=code
-currentInvoiceData=invoices[code]
+currentInvoice=invoices[code]
 
-renderItemsTable(currentInvoiceData.items)
+restoreEdits(code)
 
-downloadOriginalBtn.disabled=false
-downloadSimpleBtn.disabled=false
-whatsappShareBtn.disabled=false
+render()
 
-updateTotal()
+})
 
-}
-
-function renderItemsTable(items){
+function render(){
 
 itemsBody.innerHTML=""
 
-items.forEach((item,i)=>{
+currentInvoice.items.forEach((i,idx)=>{
 
-const tr=document.createElement('tr')
+const tr=document.createElement("tr")
 
 tr.innerHTML=`
-<td>${item.description}</td>
-<td>${item.qty}</td>
+
+<td>${i.desc}</td>
+<td>${i.qty}</td>
 <td>
 <input type="number"
-step="0.01"
-class="price-input"
-value="${item.price}"
-data-index="${i}">
+class="price-input ${i.price!=i.original?'modified':''}"
+value="${i.price}"
+data-i="${idx}">
 </td>
 `
 
@@ -296,210 +282,237 @@ itemsBody.appendChild(tr)
 
 })
 
-document.querySelectorAll('.price-input').forEach((input,idx)=>{
+updateTotal()
 
-input.addEventListener('focus',function(){
-this.select()
-})
-
-input.addEventListener('keydown',function(e){
-
-if(e.key==="Enter"){
-e.preventDefault()
-const next=document.querySelector(`input[data-index="${idx+1}"]`)
-if(next)next.focus()
 }
 
-if(e.key==="ArrowDown"){
-e.preventDefault()
-const next=document.querySelector(`input[data-index="${idx+1}"]`)
-if(next)next.focus()
-}
+itemsBody.addEventListener("input",e=>{
 
-if(e.key==="ArrowUp"){
-e.preventDefault()
-const prev=document.querySelector(`input[data-index="${idx-1}"]`)
-if(prev)prev.focus()
-}
+if(!e.target.classList.contains("price-input"))return
 
-})
+const i=e.target.dataset.i
 
-input.addEventListener('input',function(){
+const val=parseFloat(e.target.value)||0
 
-const i=this.dataset.index
-const val=parseFloat(this.value)||0
+currentInvoice.items[i].price=val
 
-currentInvoiceData.items[i].price=val
+if(val!=currentInvoice.items[i].original)
+e.target.classList.add("modified")
+else
+e.target.classList.remove("modified")
 
-if(val!=currentInvoiceData.items[i].originalPrice){
-this.classList.add('modified')
-}else{
-this.classList.remove('modified')
-}
+saveEdits()
 
 updateTotal()
 
 })
 
+itemsBody.addEventListener("focusin",e=>{
+
+if(e.target.classList.contains("price-input"))
+e.target.select()
+
+})
+
+itemsBody.addEventListener("keydown",e=>{
+
+if(!e.target.classList.contains("price-input"))return
+
+const idx=parseInt(e.target.dataset.i)
+
+if(e.key==="Enter"||e.key==="ArrowDown"){
+
+e.preventDefault()
+
+const next=document.querySelector(`[data-i="${idx+1}"]`)
+
+if(next)next.focus()
+
+}
+
+if(e.key==="ArrowUp"){
+
+e.preventDefault()
+
+const prev=document.querySelector(`[data-i="${idx-1}"]`)
+
+if(prev)prev.focus()
+
+}
+
+})
+
+document.addEventListener("keydown",e=>{
+
+if(e.ctrlKey && e.key==="Enter"){
+
+shareWhatsApp()
+
+}
+
+})
+
+function updateTotal(){
+
+let t=0
+
+currentInvoice.items.forEach(i=>{
+
+t+=i.qty*i.price
+
+})
+
+totalBox.textContent="إجمالي الفاتورة: "+t.toFixed(2)
+
+}
+
+function saveEdits(){
+
+const code=select.value
+
+savedEdits[code]=currentInvoice.items.map(i=>i.price)
+
+localStorage.setItem(STORAGE_KEY,JSON.stringify(savedEdits))
+
+}
+
+function restoreEdits(code){
+
+if(!savedEdits[code])return
+
+savedEdits[code].forEach((p,i)=>{
+
+currentInvoice.items[i].price=p
+
 })
 
 }
 
-function updateTotal(){
+function applyChanges(){
 
-let total=0
+currentInvoice.items.forEach(i=>{
 
-currentInvoiceData.items.forEach(i=>{
-total+=i.qty*i.price
+const sheet=currentInvoice.workbook.Sheets[i.sheet]
+
+const addr=XLSX.utils.encode_cell({r:i.row,c:i.col})
+
+sheet[addr].v=i.price
+
 })
-
-totalBox.textContent="إجمالي الفاتورة: "+total.toFixed(2)
 
 }
 
 function autoWidth(ws,data){
 
-const widths=[]
+const w=[]
 
-data.forEach(row=>{
-row.forEach((cell,i)=>{
-const len=cell?cell.toString().length:10
-widths[i]=Math.max(widths[i]||10,len)
-})
+data.forEach(r=>{
+
+r.forEach((c,i)=>{
+
+const l=c?c.toString().length:10
+
+w[i]=Math.max(w[i]||10,l)
+
 })
 
-ws['!cols']=widths.map(w=>({wch:w+2}))
+})
+
+ws['!cols']=w.map(v=>({wch:v+2}))
 
 }
 
-function handleDownloadOriginal(){
-
-const inv=currentInvoiceData
-
-inv.items.forEach(item=>{
-const sheet=inv.workbook.Sheets[item.sheetName]
-const addr=XLSX.utils.encode_cell({r:item.row,c:item.colPrice})
-sheet[addr].v=item.price
-})
-
-inv.workbook.SheetNames.forEach(name=>{
-inv.workbook.Sheets[name]['!rtl']=true
-})
-
-const wbout=XLSX.write(inv.workbook,{bookType:'xlsx',type:'array'})
-
-downloadFile(wbout,inv.fileName.replace('.xlsx','_محدث.xlsx'))
-
-}
-
-function buildExcelData(){
+function buildData(){
 
 const data=[
-['رقم الفاتورة',currentInvoiceCode],
-[''],
-['الوصف','الكمية','السعر']
+
+["الوصف","الكمية","السعر"]
+
 ]
 
-currentInvoiceData.items.forEach(i=>{
-data.push([i.description,i.qty,i.price])
+currentInvoice.items.forEach(i=>{
+
+data.push([i.desc,i.qty,i.price])
+
 })
 
-data.push([''])
-data.push(['إجمالي الفاتورة',calculateTotal()])
+data.push(["",""])
+data.push(["إجمالي",totalBox.textContent.split(":")[1]])
 
 return data
 
 }
 
-function calculateTotal(){
+document.getElementById("downloadSimple").onclick=()=>{
 
-let total=0
+const wb=XLSX.utils.book_new()
 
-currentInvoiceData.items.forEach(i=>{
-total+=i.qty*i.price
+const data=buildData()
+
+const ws=XLSX.utils.aoa_to_sheet(data)
+
+ws['!dir']="rtl"
+
+autoWidth(ws,data)
+
+XLSX.utils.book_append_sheet(wb,ws,"فاتورة")
+
+XLSX.writeFile(wb,"invoice.xlsx")
+
+}
+
+document.getElementById("downloadOriginal").onclick=()=>{
+
+applyChanges()
+
+currentInvoice.workbook.SheetNames.forEach(n=>{
+
+currentInvoice.workbook.Sheets[n]['!dir']="rtl"
+
 })
 
-return total.toFixed(2)
+XLSX.writeFile(currentInvoice.workbook,"updated.xlsx")
 
 }
 
-function handleDownloadSimple(){
+async function shareWhatsApp(){
+
+applyChanges()
 
 const wb=XLSX.utils.book_new()
-const data=buildExcelData()
+
+const data=buildData()
 
 const ws=XLSX.utils.aoa_to_sheet(data)
 
-ws['!rtl']=true
+ws['!dir']="rtl"
+
 autoWidth(ws,data)
 
-XLSX.utils.book_append_sheet(wb,ws,'فاتورة')
+XLSX.utils.book_append_sheet(wb,ws,"فاتورة")
 
-const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'})
+const out=XLSX.write(wb,{type:"array",bookType:"xlsx"})
 
-downloadFile(wbout,currentInvoiceCode+"_مبسط.xlsx")
+const blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
 
-}
-
-async function handleWhatsAppShare(){
-
-const wb=XLSX.utils.book_new()
-const data=buildExcelData()
-
-const ws=XLSX.utils.aoa_to_sheet(data)
-
-ws['!rtl']=true
-autoWidth(ws,data)
-
-XLSX.utils.book_append_sheet(wb,ws,'فاتورة')
-
-const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'})
-
-const blob=new Blob([wbout],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
-const file=new File([blob],`${currentInvoiceCode}.xlsx`)
+const file=new File([blob],"invoice.xlsx")
 
 if(navigator.canShare && navigator.canShare({files:[file]})){
 
 await navigator.share({
 files:[file],
-title:"فاتورة محدثة"
+title:"فاتورة"
 })
 
 }else{
 
-downloadFile(wbout,currentInvoiceCode+".xlsx")
+XLSX.writeFile(wb,"invoice.xlsx")
 
 }
 
 }
 
-document.addEventListener("keydown",function(e){
-
-if(e.ctrlKey && e.key==="Enter"){
-
-e.preventDefault()
-
-if(currentInvoiceData){
-handleWhatsAppShare()
-}
-
-}
-
-})
-
-function downloadFile(data,filename){
-
-const blob=new Blob([data],{type:"application/octet-stream"})
-const a=document.createElement('a')
-
-a.href=URL.createObjectURL(blob)
-a.download=filename
-
-document.body.appendChild(a)
-a.click()
-document.body.removeChild(a)
-
-}
+document.getElementById("shareWA").onclick=shareWhatsApp
 
 </script>
 
